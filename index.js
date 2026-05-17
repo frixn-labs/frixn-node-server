@@ -1,8 +1,7 @@
 const express = require('express');
-const dns = require('dns');
-dns.setDefaultResultOrder('ipv4first');
 const cors = require('cors');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
+const fs = require('fs');
 require('dotenv').config();
 const { generateSalesInquiryEmail } = require('./salesEmail');
 const { generateLeadReminderEmail } = require('./leadEmail');
@@ -64,39 +63,41 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Transporter Configuration
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST,
-  port: parseInt(process.env.SMTP_PORT) || 465,
-  secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for other ports
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
-  },
-});
-
-// Verify Transporter
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('Error connecting to SMTP server:', error);
-  } else {
-    console.log('SMTP Server is ready to take our messages');
-  }
-});
+// Initialize Resend
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper function to send emails
 async function sendEmail(res, from, to, subject, html, attachments = []) {
   try {
-    const info = await transporter.sendMail({
-      from: `"Frixn" <${from}>`,
+    // Process attachments for Resend
+    // Resend expects { filename, content } where content is a Buffer or string
+    const resendAttachments = attachments.map(att => {
+      if (att.path) {
+        return {
+          filename: att.filename,
+          content: fs.readFileSync(att.path)
+        };
+      }
+      return att;
+    });
+
+    const data = await resend.emails.send({
+      from: `Frixn <${from}>`,
       to,
       subject,
       html,
-      attachments,
+      attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
     });
-    console.log(`Message sent: ${info.messageId}`);
-    if (res) return res.status(200).json({ success: true, messageId: info.messageId });
-    return { success: true, messageId: info.messageId };
+
+    if (data.error) {
+      console.error('Resend API Error:', data.error);
+      if (res) return res.status(500).json({ error: 'Failed to send email' });
+      throw new Error(data.error.message);
+    }
+
+    console.log(`Message sent: ${data.data.id}`);
+    if (res) return res.status(200).json({ success: true, messageId: data.data.id });
+    return { success: true, messageId: data.data.id };
   } catch (error) {
     console.error('Error sending email:', error);
     if (res) return res.status(500).json({ error: 'Failed to send email' });
