@@ -335,7 +335,7 @@ app.post('/api/email/lead-updates', async (req, res) => {
 
     // Query Supabase for leads that need follow-up
     const { data: leadsData, error } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('leads')
       .select(`
         *,
@@ -453,7 +453,7 @@ app.post('/api/email/lead-updates', async (req, res) => {
     // Update reminder_status in supabase
     const leadIdsArray = Array.from(processedLeadIds);
     supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('leads')
       .update({ reminder_status: 'sent' })
       .in('id', leadIdsArray)
@@ -479,7 +479,7 @@ app.post('/api/email/tap-updates', async (req, res) => {
 
     // Fetch tap details and employee info
     const { data: tapData, error } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('taps')
       .select(`
         *,
@@ -567,7 +567,7 @@ const nfcUpdatesHandler = async (req, res) => {
 
     // Fetch NFC card details and employee info
     const { data: nfcData, error } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('nfc_cards')
       .select(`
         *,
@@ -660,7 +660,7 @@ app.post('/api/email/payments', async (req, res) => {
 
     // Fetch org details and latest pending billing
     const { data: orgData, error: orgError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('organizations')
       .select('id, name, admin_email, admin_name')
       .eq('id', org_id)
@@ -677,7 +677,7 @@ app.post('/api/email/payments', async (req, res) => {
 
     // Check notification settings for upcoming_bills
     const { data: notifData, error: notifError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('notification_settings')
       .select('upcoming_bills')
       .eq('org_id', org_id)
@@ -692,7 +692,7 @@ app.post('/api/email/payments', async (req, res) => {
     }
 
     const { data: billingData, error: billingError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('billing')
       .select('id, created_at, status')
       .eq('org_id', org_id)
@@ -716,7 +716,7 @@ app.post('/api/email/payments', async (req, res) => {
 
     // Fetch active employee count for the org
     const { count: employeeCount, error: empError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('employees')
       .select('id', { count: 'exact', head: true })
       .eq('org_id', org_id)
@@ -774,7 +774,7 @@ app.post('/api/email/invoice', async (req, res) => {
 
     // Fetch the billing record to get org_id and metadata
     const { data: billingData, error: billingError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('billing')
       .select('id, org_id, created_at, status, invoice_number')
       .eq('id', id)
@@ -787,7 +787,7 @@ app.post('/api/email/invoice', async (req, res) => {
 
     // Fetch org details
     const { data: orgData, error: orgError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('organizations')
       .select('id, name, admin_email, admin_name')
       .eq('id', billingData.org_id)
@@ -804,7 +804,7 @@ app.post('/api/email/invoice', async (req, res) => {
 
     // Check notification settings for invoices_receipts
     const { data: notifData, error: notifError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('notification_settings')
       .select('invoices_receipts')
       .eq('org_id', billingData.org_id)
@@ -820,7 +820,7 @@ app.post('/api/email/invoice', async (req, res) => {
 
     // Fetch active employee count for line item calculation
     const { count: employeeCount, error: empError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('employees')
       .select('id', { count: 'exact', head: true })
       .eq('org_id', billingData.org_id)
@@ -896,7 +896,7 @@ app.post('/api/email/dailyreport', async (req, res) => {
 
     // Fetch all orgs with admin details and notification settings
     const { data: orgs, error: orgsError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('organizations')
       .select(`
         id, name, admin_email, admin_name,
@@ -931,7 +931,7 @@ app.post('/api/email/dailyreport', async (req, res) => {
 
           // --- LEADS ---
           const { data: leadsRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('leads')
             .select('id, employee_id, employees(name)')
             .eq('org_id', orgId)
@@ -952,7 +952,7 @@ app.post('/api/email/dailyreport', async (req, res) => {
 
           // --- TAPS ---
           const { data: tapsRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('taps')
             .select('id, employee_id, city, employees(name)')
             .eq('org_id', orgId)
@@ -982,7 +982,7 @@ app.post('/api/email/dailyreport', async (req, res) => {
 
           // --- DEACTIVATED NFC CARDS ---
           const { data: deactivatedRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('nfc_cards')
             .select('id, deactivation_reason, employees(name)')
             .eq('org_id', orgId)
@@ -997,7 +997,7 @@ app.post('/api/email/dailyreport', async (req, res) => {
 
           // --- TOP LINK CLICKS ---
           const { data: clicksRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('card_link_clicks')
             .select('card_link_id, card_links(title, url)')
             .eq('org_id', orgId)
@@ -1008,7 +1008,7 @@ app.post('/api/email/dailyreport', async (req, res) => {
           for (const click of (clicksRaw || [])) {
             const linkId = click.card_link_id;
             const title = click.card_links?.title || 'Untitled Link';
-            const url   = click.card_links?.url   || '#';
+            const url = click.card_links?.url || '#';
             if (!linksMap[linkId]) linksMap[linkId] = { title, url, count: 0 };
             linksMap[linkId].count++;
           }
@@ -1019,7 +1019,7 @@ app.post('/api/email/dailyreport', async (req, res) => {
           // Build report and send email
           const reportData = {
             leads: { total: leadsTotal, topEmployees: topLeadEmployees },
-            taps:  { total: tapsTotal,  topCity, topEmployees: topTapEmployees },
+            taps: { total: tapsTotal, topCity, topEmployees: topTapEmployees },
             deactivatedCards,
             topLinks
           };
@@ -1058,7 +1058,7 @@ app.post('/api/email/weeklyreport', async (req, res) => {
 
     // Fetch all orgs with admin details and notification settings
     const { data: orgs, error: orgsError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('organizations')
       .select(`
         id, name, admin_email, admin_name,
@@ -1093,7 +1093,7 @@ app.post('/api/email/weeklyreport', async (req, res) => {
 
           // --- LEADS ---
           const { data: leadsRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('leads')
             .select('id, employee_id, employees(name)')
             .eq('org_id', orgId)
@@ -1114,7 +1114,7 @@ app.post('/api/email/weeklyreport', async (req, res) => {
 
           // --- TAPS ---
           const { data: tapsRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('taps')
             .select('id, employee_id, city, employees(name)')
             .eq('org_id', orgId)
@@ -1140,7 +1140,7 @@ app.post('/api/email/weeklyreport', async (req, res) => {
 
           // --- DEACTIVATED NFC CARDS ---
           const { data: deactivatedRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('nfc_cards')
             .select('id, deactivation_reason, employees(name)')
             .eq('org_id', orgId)
@@ -1155,7 +1155,7 @@ app.post('/api/email/weeklyreport', async (req, res) => {
 
           // --- TOP LINK CLICKS ---
           const { data: clicksRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('card_link_clicks')
             .select('card_link_id, card_links(title, url)')
             .eq('org_id', orgId)
@@ -1166,7 +1166,7 @@ app.post('/api/email/weeklyreport', async (req, res) => {
           for (const click of (clicksRaw || [])) {
             const linkId = click.card_link_id;
             const title = click.card_links?.title || 'Untitled Link';
-            const url   = click.card_links?.url   || '#';
+            const url = click.card_links?.url || '#';
             if (!linksMap[linkId]) linksMap[linkId] = { title, url, count: 0 };
             linksMap[linkId].count++;
           }
@@ -1177,7 +1177,7 @@ app.post('/api/email/weeklyreport', async (req, res) => {
           // Build report and send email
           const reportData = {
             leads: { total: leadsTotal, topEmployees: topLeadEmployees },
-            taps:  { total: tapsTotal, topCity, topEmployees: topTapEmployees },
+            taps: { total: tapsTotal, topCity, topEmployees: topTapEmployees },
             deactivatedCards,
             topLinks
           };
@@ -1205,15 +1205,15 @@ app.post('/api/email/monthlyreport', async (req, res) => {
     // Current month date range: first day to today (last day)
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthEnd   = new Date(now.getFullYear(), now.getMonth() + 1, 1); // exclusive
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1); // exclusive
     const mStart = monthStart.toISOString();
-    const mEnd   = monthEnd.toISOString();
+    const mEnd = monthEnd.toISOString();
 
     const monthLabel = now.toLocaleDateString('en-IN', { month: 'long', year: 'numeric' });
 
     // Fetch all orgs with admin details and notification settings
     const { data: orgs, error: orgsError } = await supabase
-      .schema('tapconnect')
+      .schema('frixn')
       .from('organizations')
       .select(`
         id, name, admin_email, admin_name,
@@ -1248,7 +1248,7 @@ app.post('/api/email/monthlyreport', async (req, res) => {
 
           // --- LEADS ---
           const { data: leadsRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('leads')
             .select('id, employee_id, employees(name)')
             .eq('org_id', orgId)
@@ -1269,7 +1269,7 @@ app.post('/api/email/monthlyreport', async (req, res) => {
 
           // --- TAPS ---
           const { data: tapsRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('taps')
             .select('id, employee_id, city, employees(name)')
             .eq('org_id', orgId)
@@ -1296,7 +1296,7 @@ app.post('/api/email/monthlyreport', async (req, res) => {
 
           // --- DEACTIVATED NFC CARDS ---
           const { data: deactivatedRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('nfc_cards')
             .select('id, deactivation_reason, employees(name)')
             .eq('org_id', orgId)
@@ -1311,7 +1311,7 @@ app.post('/api/email/monthlyreport', async (req, res) => {
 
           // --- TOP LINK CLICKS ---
           const { data: clicksRaw } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('card_link_clicks')
             .select('card_link_id, card_links(title, url)')
             .eq('org_id', orgId)
@@ -1322,7 +1322,7 @@ app.post('/api/email/monthlyreport', async (req, res) => {
           for (const click of (clicksRaw || [])) {
             const linkId = click.card_link_id;
             const title = click.card_links?.title || 'Untitled Link';
-            const url   = click.card_links?.url   || '#';
+            const url = click.card_links?.url || '#';
             if (!linksMap[linkId]) linksMap[linkId] = { title, url, count: 0 };
             linksMap[linkId].count++;
           }
@@ -1332,7 +1332,7 @@ app.post('/api/email/monthlyreport', async (req, res) => {
 
           // --- NEW EMPLOYEES JOINED THIS MONTH ---
           const { count: newEmployees } = await supabase
-            .schema('tapconnect')
+            .schema('frixn')
             .from('employees')
             .select('id', { count: 'exact', head: true })
             .eq('org_id', orgId)
@@ -1341,8 +1341,8 @@ app.post('/api/email/monthlyreport', async (req, res) => {
 
           // Build and send report
           const reportData = {
-            leads:  { total: leadsTotal, topEmployees: topLeadEmployees },
-            taps:   { total: tapsTotal, topCities, topEmployees: topTapEmployees },
+            leads: { total: leadsTotal, topEmployees: topLeadEmployees },
+            taps: { total: tapsTotal, topCities, topEmployees: topTapEmployees },
             deactivatedCards,
             topLinks,
             newEmployees: newEmployees || 0
