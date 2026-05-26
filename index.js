@@ -115,16 +115,8 @@ app.post('/api/email/sales', async (req, res) => {
 
   const { subject, html } = generateSalesInquiryEmail(fullName, phone, email, organization, teamSize);
 
-  const attachments = [
-    { filename: 'icons8-person-48.png', path: path.join(__dirname, 'icons', 'icons8-person-48.png'), cid: 'icon-person' },
-    { filename: 'icons8-phone-48.png', path: path.join(__dirname, 'icons', 'icons8-phone-48.png'), cid: 'icon-phone' },
-    { filename: 'icons8-email-48.png', path: path.join(__dirname, 'icons', 'icons8-email-48.png'), cid: 'icon-envelope' },
-    { filename: 'icons8-organization-48.png', path: path.join(__dirname, 'icons', 'icons8-organization-48.png'), cid: 'icon-building' },
-    { filename: 'icons8-team-48.png', path: path.join(__dirname, 'icons', 'icons8-team-48.png'), cid: 'icon-group' }
-  ];
-
   // From: noreply, To: sales
-  return sendEmail(res, 'noreply@frixn.in', 'manoj@frixn.in', subject, html, attachments);
+  return sendEmail(res, 'noreply@frixn.in', 'sales@frixn.in', subject, html);
 });
 
 // 2. Onboarding Endpoint
