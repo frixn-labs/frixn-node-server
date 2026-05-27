@@ -12,6 +12,7 @@ const { generateInvoiceEmail } = require('./invoiceEmail');
 const { generateDailyReportEmail } = require('./dailyReportEmail');
 const { generateWeeklyReportEmail } = require('./weeklyReportEmail');
 const { generateMonthlyReportEmail } = require('./monthlyReportEmail');
+const { generateNewEmployeeEmail } = require('./newEmployeeEmail');
 const path = require('path');
 const { createClient } = require('@supabase/supabase-js');
 const WebSocket = require('ws');
@@ -114,6 +115,20 @@ app.post('/api/email/sales', async (req, res) => {
   }
 
   const { subject, html } = generateSalesInquiryEmail(fullName, phone, email, organization, teamSize);
+
+  // From: noreply, To: sales
+  return sendEmail(res, 'noreply@frixn.in', 'sales@frixn.in', subject, html);
+});
+
+// 1b. New Employee Endpoint
+app.post('/api/email/new-employee', async (req, res) => {
+  const { orgName, employeeName, designation, department, employeeCode, email, phone } = req.body;
+
+  if (!orgName || !employeeName || !designation || !department || !employeeCode || !email || !phone) {
+    return res.status(400).json({ error: 'Missing required fields: orgName, employeeName, designation, department, employeeCode, email, phone' });
+  }
+
+  const { subject, html } = generateNewEmployeeEmail(orgName, employeeName, designation, department, employeeCode, email, phone);
 
   // From: noreply, To: sales
   return sendEmail(res, 'noreply@frixn.in', 'sales@frixn.in', subject, html);
