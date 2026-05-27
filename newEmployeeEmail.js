@@ -60,19 +60,6 @@ function generateNewEmployeeEmail(orgName, employeeName, designation, department
             ${getRow('Organization', orgName, true)}
           </table>
         </div>
-
-        <!-- Action / Dashboard link -->
-        <div style="margin-top:36px; text-align:center;">
-          <table width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td align="center">
-                <a href="https://www.frixn.in/sites/frixn/admin/employees" style="display:inline-block; padding:14px 32px; background:#0f0a04; color:#ffffff; border-radius:8px; font-weight:600; font-size:15px; text-decoration:none; font-family: Arial, sans-serif;">
-                  Manage Profiles in Dashboard
-                </a>
-              </td>
-            </tr>
-          </table>
-        </div>
       </div>
 
       <!-- Footer -->
