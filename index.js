@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const crypto = require('crypto');
 const { Resend } = require('resend');
 const fs = require('fs');
 require('dotenv').config();
@@ -61,8 +62,121 @@ const tapEmailQueue = new EmailQueue();
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = [
+  'https://frixn.in',
+  'https://www.frixn.in',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps, curl, server-to-server)
+    if (!origin) return callback(null, true);
+
+    
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  }
+}));
 app.use(express.json());
+
+// Configure Rate Limiting for Email API (20 requests / 1 minute by default)
+const rateLimitImport = require('express-rate-limit');
+const rateLimit = typeof rateLimitImport === 'function' ? rateLimitImport : rateLimitImport.rateLimit;
+
+const emailRateLimiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_EMAIL_WINDOW_SECS || '60', 10) * 1000,
+  max: parseInt(process.env.RATE_LIMIT_EMAIL_MAX || '20', 10),
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too Many Requests' },
+  statusCode: 429,
+  handler: (req, res, next, options) => {
+    const windowMs = options.windowMs || 60000;
+    const retryAfter = Math.ceil(windowMs / 1000);
+    res.setHeader('Retry-After', retryAfter.toString());
+    res.status(options.statusCode).json(options.message);
+  }
+});
+
+// Apply rate limiting to all email endpoints
+app.use('/api/email', emailRateLimiter);
+
+/**
+ * Centralized Authentication Middleware
+ * 
+ * Secures all email endpoints by verifying the API_SECRET key passed in the
+ * Authorization header as a Bearer token.
+ * 
+ * How Frontend/Client requests must send the Authorization header:
+ * 
+ * Method: POST
+ * Headers:
+ *   'Authorization': 'Bearer <API_SECRET>'
+ *   'Content-Type': 'application/json'
+ * 
+ * Example using Fetch API:
+ *   const apiSecret = 'your-api-secret-key';
+ *   fetch('/api/email/updates', {
+ *     method: 'POST',
+ *     headers: {
+ *       'Content-Type': 'application/json',
+ *       'Authorization': `Bearer ${apiSecret}`
+ *     },
+ *     body: JSON.stringify({
+ *       to: 'recipient@example.com',
+ *       subject: 'Hello World',
+ *       html: '<p>Test email</p>'
+ *     })
+ *   });
+ */
+const authenticateApiKey = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+
+  if (!authHeader) {
+    return res.status(401).json({ error: 'Unauthorized: Missing token' });
+  }
+
+  const parts = authHeader.split(' ');
+  if (parts.length !== 2 || parts[0] !== 'Bearer' || !parts[1]) {
+    return res.status(401).json({ error: 'Unauthorized: Missing token' });
+  }
+
+  const token = parts[1];
+  const apiSecret = process.env.API_SECRET;
+
+  if (!apiSecret) {
+    console.error('Error: API_SECRET environment variable is not defined.');
+    return res.status(500).json({ error: 'Internal Server Error: Authentication key not configured on server' });
+  }
+
+  // Constant-time comparison using sha256 to prevent timing attacks on keys of differing lengths
+  const tokenHash = crypto.createHash('sha256').update(token).digest();
+  const secretHash = crypto.createHash('sha256').update(apiSecret).digest();
+  const isValid = crypto.timingSafeEqual(tokenHash, secretHash);
+
+  if (!isValid) {
+    return res.status(403).json({ error: 'Forbidden: Invalid token' });
+  }
+
+  next();
+};
+
+// Rate limiting configuration for email endpoints (20 requests per 1 minute by default)
+const emailLimiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_EMAIL_WINDOW_MS, 10) || 60 * 1000,
+  max: parseInt(process.env.RATE_LIMIT_EMAIL_MAX, 10) || 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many email requests. Please try again later.' },
+  statusCode: 429
+});
+
+// Protect all email-related endpoints under /api/email with rate limiting and api key authentication
+app.use('/api/email', emailLimiter, authenticateApiKey);
 
 // Initialize Resend
 const resend = new Resend(process.env.RESEND_API_KEY);
