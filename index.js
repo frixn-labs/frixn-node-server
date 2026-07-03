@@ -188,6 +188,12 @@ async function sendEmail(res, from, to, subject, html, attachments = [], replyTo
     // Resend expects { filename, content } where content is a Buffer or string
     const resendAttachments = attachments.map(att => {
       if (att.path) {
+        if (att.path.startsWith('http://') || att.path.startsWith('https://')) {
+          return {
+            filename: att.filename,
+            path: att.path
+          };
+        }
         return {
           filename: att.filename,
           content: fs.readFileSync(att.path)
@@ -443,14 +449,14 @@ app.post('/api/email/onboarding', async (req, res) => {
 
 // 3. Updates Endpoint
 app.post('/api/email/updates', async (req, res) => {
-  const { to, subject, html, fromName, replyTo } = req.body;
+  const { to, subject, html, fromName, replyTo, attachments } = req.body;
   if (!to || !subject || !html) {
     return res.status(400).json({ error: 'Missing required fields: to, subject, html' });
   }
   const fromEmail = 'updates@frixn.in';
   const fromValue = fromName ? `${fromName} <${fromEmail}>` : fromEmail;
   // From: updates (with dynamic name), To: [from request]
-  return sendEmail(res, fromValue, to, subject, html, [], replyTo);
+  return sendEmail(res, fromValue, to, subject, html, attachments || [], replyTo);
 });
 
 // 4. Lead Updates Endpoint (Triggered by Supabase Webhook / Cron)
