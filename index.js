@@ -182,7 +182,7 @@ app.use('/api/email', emailLimiter, authenticateApiKey);
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper function to send emails
-async function sendEmail(res, from, to, subject, html, attachments = []) {
+async function sendEmail(res, from, to, subject, html, attachments = [], replyTo = undefined) {
   try {
     // Process attachments for Resend
     // Resend expects { filename, content } where content is a Buffer or string
@@ -197,10 +197,11 @@ async function sendEmail(res, from, to, subject, html, attachments = []) {
     });
 
     const data = await resend.emails.send({
-      from: `Frixn <${from}>`,
+      from: from.includes('<') ? from : `Frixn <${from}>`,
       to,
       subject,
       html,
+      reply_to: replyTo,
       attachments: resendAttachments.length > 0 ? resendAttachments : undefined,
     });
 
@@ -219,6 +220,7 @@ async function sendEmail(res, from, to, subject, html, attachments = []) {
     throw error;
   }
 }
+
 
 // 1. Sales Endpoint
 app.post('/api/email/sales', async (req, res) => {
@@ -441,12 +443,14 @@ app.post('/api/email/onboarding', async (req, res) => {
 
 // 3. Updates Endpoint
 app.post('/api/email/updates', async (req, res) => {
-  const { to, subject, html } = req.body;
+  const { to, subject, html, fromName, replyTo } = req.body;
   if (!to || !subject || !html) {
     return res.status(400).json({ error: 'Missing required fields: to, subject, html' });
   }
-  // From: updates, To: [from request]
-  return sendEmail(res, 'updates@frixn.in', to, subject, html);
+  const fromEmail = 'updates@frixn.in';
+  const fromValue = fromName ? `${fromName} <${fromEmail}>` : fromEmail;
+  // From: updates (with dynamic name), To: [from request]
+  return sendEmail(res, fromValue, to, subject, html, [], replyTo);
 });
 
 // 4. Lead Updates Endpoint (Triggered by Supabase Webhook / Cron)
